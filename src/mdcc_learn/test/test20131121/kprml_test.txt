@@ -1,0 +1,8 @@
+kprml ver.0.11 22-nov-2013
+conf.setall
+/setup
+mainstream
+test mode dayo.
+read table
+read magic
+-922288128

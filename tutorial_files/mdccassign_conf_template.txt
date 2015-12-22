@@ -1,0 +1,9 @@
+-mode assign-trajtrans
+-target-column #{COLUMN} 
+-skip-data 1
+-skip-header 0
+-skip-header-gaussian 1
+-fn-gaussians ../crd_mdcclearn_gauss.txt
+-fn-data-table  ../traj.trrmdcc
+-fn-result assign/assign.dat.#{COLUMN}
+-gmm-type #{COLUMN}

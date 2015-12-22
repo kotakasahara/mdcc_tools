@@ -1,0 +1,8 @@
+--segment ANT    0   48   LOOP
+--segment AS1   49   79  SHEET
+--segment AL1   80  137   LOOP
+--segment AH1  138  281	 HELIX
+--segment BNT  282  339   LOOP
+--segment BS1  340  360  SHEET
+--segment BL1  361  418   LOOP
+--segment BH1  419  562  HELIX

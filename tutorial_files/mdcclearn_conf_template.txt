@@ -1,0 +1,6 @@
+-feature 1 #{COLUMN} x
+-n-mixed-element 5
+-skip-data 1
+-skip-header 10
+-fn-data-table  ../traj.trrmdcc
+-fn-out-gaussian ../mdcclearn_out/mdcclearn_out.txt.#{COLUMN}
