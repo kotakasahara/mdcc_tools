@@ -30,7 +30,7 @@ def define_options():
     #             type="float",
     #             help="time of the first frame")
 
-    p.add_option('--select', dest='select',
+    p.add_option('--select', dest='atom_select',
                  #default = "name CA",
                  help="Selection of atoms to be aligned")
     p.add_option('--frame-begin', dest='frame_begin',
