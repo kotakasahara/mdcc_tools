@@ -3,7 +3,7 @@
 Config::Config(){
   mode=M_TEST;
   fn_cfg = "";
-  fn_result = "pligauss_result.txt";
+  fn_result = "mdccassign_result.txt";
   fn_interactions = "interactions.txt";
   fn_gaussians = "gaussians.txt";
   assign_max_distance = 2.5;
@@ -39,7 +39,7 @@ void Config::set_all(const vector<string>& arg){
       else if(*itr == "assign-tti")    { mode=M_ASSIGN_TTI; }
       else if(*itr == "assign-tai")    { mode=M_ASSIGN_TAI; }
       else if(*itr == "assign-table")    { mode=M_ASSIGN_TABLE; }
-      else if(*itr == "assign-trajtrans")    { mode=M_ASSIGN_TRAJTRANS; }
+      else if(*itr == "assign-mdcctraj")    { mode=M_ASSIGN_TRAJTRANS; }
       else{
 	cerr<<"invalid mode [" << *itr << "]\n"; exit(1);
       }

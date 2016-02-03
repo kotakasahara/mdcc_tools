@@ -25,10 +25,18 @@ vector<string> Read::loadConfig(){
   vector<string> vconf;
   open();
   string buf;
-  while(ifs>>buf){
-    if(buf[0] != '#')
+  while(ifs && getline(ifs, buf)){
+    int pos1 = buf.find_first_of("#;");
+    if(pos1 != string::npos){
+      buf = buf.substr(0, pos1);
+    }
+    if(buf.size()==0) continue;
+    stringstream ss(buf);
+    while(ss>>buf){
       vconf.push_back(buf);
+    }
   }
+
   close();
   return vconf;
 }
@@ -65,6 +73,7 @@ ublas::vector<ublas::vector<double> > Read::loadKKTrajTrans(vector<FeatureDefini
   int size_real;
   int n_atoms;
   int n_frames;
+  int dim;
 
   ifs.read((char*)&magic, sizeof(int));
   if(magic != 1993){
@@ -79,11 +88,14 @@ ublas::vector<ublas::vector<double> > Read::loadKKTrajTrans(vector<FeatureDefini
   }
 
   readBinValues(&size_real, 1);
-  cout <<  size_real << endl;
+  cout <<  "Size of real value: " << size_real << endl;
   readBinValues(&n_atoms, 1);
-  cout << n_atoms << endl;
+  cout << "The number of elements : " << n_atoms << endl;
   readBinValues(&n_frames, 1);
-  cout << n_frames << endl;
+  cout << "The number of samples : " << n_frames << endl;
+  readBinValues(&dim, 1);
+  cout << "Dimension : " << dim << endl;
+  int size_header = 20;
 
   if(end_frame == -1) end_frame = n_frames;
   
@@ -91,7 +103,7 @@ ublas::vector<ublas::vector<double> > Read::loadKKTrajTrans(vector<FeatureDefini
   ublas::vector<ublas::vector<double> > dataTable(n_row);
 
   for(int i_row=0;i_row<n_row;i_row++){    
-    dataTable[i_row]=ublas::vector<double>((int)fDef.size()*3);
+    dataTable[i_row]=ublas::vector<double>((int)fDef.size() * dim);
   }
   
   vector<FeatureDefinition>::iterator itrFDef;    
@@ -100,13 +112,13 @@ ublas::vector<ublas::vector<double> > Read::loadKKTrajTrans(vector<FeatureDefini
   for(itrFDef=fDef.begin(); itrFDef!=fDef.end(); itrFDef++){
     //cout << "col_id: " << (*itrFDef).getColumn() << " size_real:" << size_real << " n_frames:" << n_frames <<endl;
 
-    ifs.seekg(16);
-    for(int i=0; i<(*itrFDef).getColumn()*3; i++){
+    ifs.seekg(size_header); // size of the header
+    for(int i=0; i<(*itrFDef).getColumn() * dim; i++){
       ifs.seekg(size_real * n_frames, ios::cur);
     }
 
     //cout << (*itrFDef).getColumn() << endl;
-    for(int i_dim=0; i_dim<3; i_dim++){
+    for(int i_dim=0; i_dim < dim; i_dim++){
       //cout << "dim " << i_dim << endl;
       for(int i_frm=0; i_frm<n_frames; i_frm++){
 	double buf;
@@ -120,7 +132,8 @@ ublas::vector<ublas::vector<double> > Read::loadKKTrajTrans(vector<FeatureDefini
 	if(i_frm%skip==0 && i_frm >= skip_header && i_frm <= end_frame){
 	  int i_row = (i_frm - skip_header)/skip;
 	  
-	  dataTable[i_row][i_atom*3+i_dim] = buf*10.0;
+	  dataTable[i_row][i_atom*dim+i_dim] = buf;
+	  //cout << "d " << i_frm << " " << i_row << " " << buf << endl;
 	  //cout << ifs.tellg() << " " << buf << endl;
 	}
       }
@@ -162,18 +175,19 @@ ublas::vector<ublas::vector<double> > Read::loadDataTable(vector<FeatureDefiniti
     }
     if(nCol==-1) nCol=row.size();
     else if(nCol>(int)row.size()){
-      cerr<<"kessonnchi arimasu line:"<<nLine<<endl;
+      cerr<<"Invalid value, line:"<<nLine<<endl;
       return ublas::vector<ublas::vector<double> >();
     }
     table.push_back(row);
     //    cout << "nline "<<nLine<<endl;
   }
-  //  cout << "nrow:"<<table.size()<<" ncol:"<<nCol<<endl;
+  cout << "nrow:"<<table.size()<<" ncol:"<<nCol<<endl;
   ublas::vector<ublas::vector<double> > dataTable(table.size());
   for(int i=0;i<(int)dataTable.size();i++){
     dataTable[i]=ublas::vector<double>(nCol);
     for(int j=0;j<nCol;j++){
       dataTable[i][j]=table[i][j];
+      //cout << dataTable[i][j] << endl;
     }
   }
   close();

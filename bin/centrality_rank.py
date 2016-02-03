@@ -110,11 +110,22 @@ def _main():
     for edge_keys, edge_info in tbl.relations.items():
 
         if not rank_column in tbl.elements[edge_keys[0]]:
+            print "ERROR"
             print edge_keys
             print tbl.elements[edge_keys[0]]
-            sys.exit(1)
-        edge_info[rank_column_1] = tbl.elements[edge_keys[0]][rank_column]
-        edge_info[rank_column_2] = tbl.elements[edge_keys[1]][rank_column]
+            #sys.exit(1)
+            edge_info[rank_column_1] = -1
+        else:
+            edge_info[rank_column_1] = tbl.elements[edge_keys[0]][rank_column]
+
+        if not rank_column in tbl.elements[edge_keys[1]]:
+            print "ERROR"
+            print edge_keys
+            print tbl.elements[edge_keys[1]]
+            #sys.exit(1)
+            edge_info[rank_column_2] = -1
+        else:
+            edge_info[rank_column_2] = tbl.elements[edge_keys[1]][rank_column]
     
     kktable.TableWriter(opts.fn_o_nodes).write_binrel_elements(tbl)
 

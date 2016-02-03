@@ -25,6 +25,7 @@ class Write{
   int write_assigned_tti();
   int write_line(const string& st);
   int write_assign_data(double** assign, int n_gauss, int n_row);
+  int write_assign_data_ascii(double** assign, int n_col, int n_row);
 };
 
 #endif

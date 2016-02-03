@@ -66,7 +66,8 @@ void Config::setAll(vector<string> arg){
     else if(*itr=="-fn-out-gaussian"){ fnOutGaussian=*++itr; }
     else if(*itr=="-format-data-table"){
       itr++;
-      if(*itr=="kktrajtrans") { formatDataTable=DATA_KKTRJ; }
+      if(*itr=="mdcc") { formatDataTable=DATA_KKTRJ; }
+      else if(*itr=="tsv") { formatDataTable=DATA_TABLE; }
       else{ formatDataTable=DATA_TABLE; }
     }
     else if(*itr=="-feature"){

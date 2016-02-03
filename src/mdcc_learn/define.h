@@ -9,7 +9,7 @@
 
 //About this program.
 #define EXE "mdcc_learn"
-#define ABOUT_ME "mdcc_learn ver.0.12 16-mar-2015"
+#define ABOUT_ME "mdcc_learn ver.0.13.b 02-Feb-2016"
 #define PI 3.14159265
 
 

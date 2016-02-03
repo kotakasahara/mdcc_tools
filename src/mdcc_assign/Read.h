@@ -23,6 +23,7 @@ class Read{
   int cur_line;
   bool conv_endian;
   int size_real;
+  int dim;
  public:
   ifstream ifs;
   Read(string inFn);
@@ -50,6 +51,7 @@ class Read{
   void setConvEndianTrue(){conv_endian=true;};
   void setConvEndianFalse(){conv_endian=false;};
   template <typename TYPE> int readBinValues(TYPE *recept, int len);
+  int get_dim(){return dim;};
 };
 inline int reverseEndian(int value){
   int v = value;

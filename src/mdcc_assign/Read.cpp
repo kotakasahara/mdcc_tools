@@ -24,12 +24,21 @@ vector<string> Read::load_config(){
   vector<string> vconf;
   open();
   string buf;
-  while(ifs>>buf){
-    if(buf[0] != '#')
+  while(ifs && getline(ifs, buf)){
+    int pos1 = buf.find_first_of("#;");
+    if(pos1 != string::npos){
+      buf = buf.substr(0, pos1);
+    }
+    if(buf.size()==0) continue;
+    stringstream ss(buf);
+    while(ss>>buf){
       vconf.push_back(buf);
+    }
   }
+
   close();
   return vconf;
+
 }
 
 vector<int> Read::loadIntegers(){
@@ -77,6 +86,7 @@ int Read::load_datatable_line(vector<double>& dat,
 
   if(!getline(ifs,buf)) return 1;
   stringstream ss(buf);
+  //cout << "TEST * " << ss.str() << endl;
   double tmp_dat;
   int i = 0;
   while(ss>>tmp_dat){
@@ -313,6 +323,7 @@ int Read::loadKKTrajTransHeader(int skip){
   //cout << n_atoms << endl;
   readBinValues(&n_frames, 1);
   //cout << n_frames << endl;
+  readBinValues(&dim, 1);
   int n_row = n_frames/skip;
   return n_frames;
   
@@ -320,23 +331,24 @@ int Read::loadKKTrajTransHeader(int skip){
 int Read::loadKKTrajTrans(double** table, const vector<int> &atomid, int n_frames, int skip, int skip_header){  
   int i_atom = 0;
   int n_row = (n_frames - skip_header)/skip;
+  int size_header = 20;
   vector<int>::const_iterator itr_a;
   for(itr_a = atomid.begin(); itr_a != atomid.end(); itr_a++){
-    ifs.seekg(16);
-    for(int i=0; i<(*itr_a)*3; i++){
+    ifs.seekg(size_header);
+    for(int i=0; i<(*itr_a)*dim; i++){
       ifs.seekg(size_real * n_frames, ios::cur);
     }
-    if(ifs.tellg() < 16){
+    if(ifs.tellg() < size_header){
       cout << "ERROR?? ifs.tellg()<0"<<endl;
       cerr << "ERROR?? ifs.tellg()<0"<<endl;
       exit(1);
     }
     // ifs.seekg(16 + size_real * n_frames * (*itr_a)*3);
     //cout << "size_real: "<< size_real << " n_frams:" << n_frames <<" " << (*itr_a)*3<<endl;
-    cout << "atomid:" << (*itr_a) << " " << ifs.tellg() << " " << (unsigned long long)(16 + size_real * n_frames * (*itr_a)*3) << endl;
-    for(int i_dim=0; i_dim<3; i_dim++){
+    cout << "atomid:" << (*itr_a) << " " << ifs.tellg() << " " << (unsigned long long)(size_header + size_real * n_frames * (*itr_a)*3) << endl;
+    for(int i_dim=0; i_dim < dim; i_dim++){
       //cout << "dim " << i_dim << endl;
-      for(int i_frm=0; i_frm<n_frames; i_frm++){
+      for(int i_frm=0; i_frm < n_frames; i_frm++){
 	int i_row = (i_frm - skip_header)/skip;
 	double buf;
 	if(size_real==4){
@@ -349,7 +361,7 @@ int Read::loadKKTrajTrans(double** table, const vector<int> &atomid, int n_frame
 	}
 	
 	if(i_frm%skip==0 && i_frm >= skip_header){
-	  table[i_row][i_atom*3+i_dim] = buf*10.0;
+	  table[i_row][i_atom*3+i_dim] = buf;
 	  //cout << ifs.tellg() << " " << buf*10.0 << endl;
 	}
       }

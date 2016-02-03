@@ -41,6 +41,7 @@ int Kprml::testMode(){
   ublas::vector<ublas::vector<double> > dataTable;
   cout << "read table"<<endl;
   if(cfg.formatDataTable == DATA_TABLE){
+    cout << "read tsv table"<<endl;
     dataTable=Read(cfg.fnDataTable).loadDataTable(cfg.featureDef, cfg.dataSkip, cfg.headerSkip, cfg.endFrame);
   }else if(cfg.formatDataTable == DATA_KKTRJ)
     cout << "read kktrajtrans"<<endl;
@@ -96,12 +97,13 @@ int Kprml::vbgmmMode(){
 int Kprml::vbfullMode(){
   cout << "mode vbfull"<<endl;
   ublas::vector<ublas::vector<double> > dataTable;
-  cout << "read table"<<endl;
-  if(cfg.formatDataTable == DATA_TABLE)
+  if(cfg.formatDataTable == DATA_TABLE){
+    cout << "Read tsv table"<<endl;
     dataTable=Read(cfg.fnDataTable).loadDataTable(cfg.featureDef, cfg.dataSkip, cfg.headerSkip);
-  else if(cfg.formatDataTable == DATA_KKTRJ)
+  }else if(cfg.formatDataTable == DATA_KKTRJ){
+    cout << "Read mDCC binary data table"<<endl;
     dataTable=Read(cfg.fnDataTable).loadKKTrajTrans(cfg.featureDef, cfg.dataSkip, cfg.headerSkip);
-  //cout << "vbfull"<<endl;
+  }
 
   VBfull vbfull(dataTable, 
 		cfg.fnOutGaussian,

@@ -11,11 +11,6 @@ import struct
 import kktrajtrans
 import local_block_bootstrap as lbb
 
-#sys.path.append("/home/kotakasahara/local/kktools/kkio")
-#from mda_dynamic_correlation import set_contact_atom_pair
-#from rpy2.robjects.packages import importr
-#import rpy2.robjects as robjects
-#grdevices = importr('grDevices')
 DEBUG = True
 
 EPS6 = 1e-8
@@ -29,8 +24,6 @@ def define_options():
 
     p = OptionParser()
 
-    #p.add_option('-i', dest='fn_mdconf',
-    #help="file name for MDConf file")
     p.add_option('--fn-ref', dest='fn_ref',
                  help="file name for ref file")
     p.add_option('--skip', dest='skip',
@@ -47,23 +40,24 @@ def define_options():
                  action="store_true",
                  help="The flag indicating that the assignment files were written in binary format")
     p.add_option('--pref-assign', dest='pref_assign',
-                 default="",
                  help="prefix of file name for trajectory of assignments to GMM.")
     p.add_option('--suff-assign', dest='suff_assign',
-                 default=".txt",
+                 default="",
                  help="suffix of file name for trajectory of assignments to GMM.")
 
     p.add_option('--fn-crd-bin', dest='fn_crd_bin',
                  help="file name for trajectory of coordinates.")
     p.add_option('--pref-crd', dest='pref_crd',
-                 default="crd_",
                  help="prefix of file name for trajectory of coordinates.")
     p.add_option('--suff-crd', dest='suff_crd',
-                 default=".txt",
+                 default="",
                  help="suffix of file name for trajectory of coordinates.")
-    p.add_option('--dir-res', dest='dir_res',
-                 default="res_",
-                 help="prefix of directory to assignment files for each residue")
+    p.add_option('--crd-tsv-skip-header', dest='crd_tsv_skip_header',
+                 default=0,
+                 help="The number of lines to be skipped in the tsv file.")
+    p.add_option('--crd-tsv-columns', dest='crd_tsv_columns',
+                 action="append", type="int",
+                 help="The columns-IDs defines the data in the tsv file.")
 
     p.add_option('--timestep', dest='timestep',
                  type="float",
@@ -89,10 +83,12 @@ def define_options():
     p.add_option('--select', dest='str_select',
                  action="append",
                  help="MDAnalysis selection string for atom set 1")    
+    p.add_option('--select-id', dest='str_select_id',
+                 help="Atom id to be analyzed. ex) 0-5,7,10-12")
 
     p.add_option('--o-atom', dest="fn_o_atom",
                  help="")
-    p.add_option('--o-gauss', dest="fn_o_gauss",
+    p.add_option('--o-mdcc', dest="fn_o_mdcc",
                  help="")
     p.add_option('--o-rmsf', dest="fn_o_rmsf",
                  help="")
@@ -105,15 +101,15 @@ def define_options():
                  help="")
 
     ## Local Block Bootstrap
-    p.add_option('--lbb-block-size', dest="lbb_block_size",
-                 type="int",
-                 help="Block size for local block bootstrap")
-    p.add_option('--lbb-b', dest="lbb_b",
-                 type="float",
-                 help="B value for local block bootstrap")
-    p.add_option('--lbb-repeat', dest="lbb_repeat",
-                 type="int",
-                 help="number of bootstrap samples for local block bootstrap")
+    #p.add_option('--lbb-block-size', dest="lbb_block_size",
+    #             type="int",
+    #             help="Block size for local block bootstrap")
+    #p.add_option('--lbb-b', dest="lbb_b",
+    #             type="float",
+    #             help="B value for local block bootstrap")
+    #p.add_option('--lbb-repeat', dest="lbb_repeat",
+    #             type="int",
+    #             help="number of bootstrap samples for local block bootstrap")
 
     ## paralell
     p.add_option('--n-div', dest="n_div_job",
@@ -143,33 +139,66 @@ def define_options():
 
 def print_opt_info(opts):
     if not opts.pref_assign:
-        print "the conventional Dynamic Cross Correlation"
+        print "The conventional Dynamic Cross Correlation"
     else:
-        print "the multi-modal Dinamic Cross Correlation"
+        print "The multi-modal Dinamic Cross Correlation"
+
+    if not opts.fn_crd_bin:
+        if not opts.pref_crd or \
+                not opts.crd_tsv_columns:
+            print "When the binary trajectory data is not specified by --fn-crd-bin optsion,"
+            print "the .tsv files must be specified by --pref-crd and --suff-crd options."
+            print "The names of .tsv files must include 0-origin element (atom) ID."
+            print "ex) crd_0.tsv, crd_1.tsv, ..."
+            print "    --pref-crd crd_  --suff-crd .tsv"
+            print ""
+            print "In addition, 0-origin column IDs in the .tsv file is specified by --crd-tsv-columns option,"
+            print "in order to define the column of the data to be analyzed."
+            sys.exit(1)
+
     return 
 
 def _main():
     opts, args = define_options() 
     print_opt_info(opts)
+
     fn_ref = None
+    univ = None
 
-    fn_ref = opts.fn_ref
-    if not fn_ref:
-        print "--fn-ref is required"
-        sys.exit(1)
+    if opts.fn_ref:
+        fn_ref = opts.fn_ref
+        univ = Universe(fn_ref)
 
-    #fn_ref = mdconf.gro_init_structure
-    univ = Universe(fn_ref)
-                    #mdconf.gro_traj_trr)
-
-    #contact_atom_pairs = set_contact_atom_pair(opts.fn_dist_summary, opts.max_dist,
-    #univ, opts.atom_select)
     time_range = (opts.range_time_begin, opts.range_time_end)
 
-
-    atom_ids = get_atom_ids_from_select(univ, opts.str_select)
+    atom_ids = None
+    #dim = None
+    flg_crd_bin = opts.fn_crd_bin != None
     
-    print "Number of target atoms: " + str(len(atom_ids))
+    if opts.fn_crd_bin:
+        trajreader = kktrajtrans.TrajTReader(opts.fn_crd_bin)
+        trajreader.open()
+        trajreader.read_header()
+        dim = trajreader.dim
+        n_frames = trajreader.n_frames
+        n_atoms = trajreader.n_atoms
+        trajreader.close()
+    else:
+        dim = len(opts.crd_tsv_columns)
+        
+    if opts.str_select_id:
+        atom_ids = select_atom_ids(opts.str_select_id)
+    elif univ:
+        if len(opts.str_select)>0:
+            print opts.str_select
+            atom_ids = get_atom_ids_from_select(univ, opts.str_select)
+        else:
+            atom_ids = get_atom_ids_from_select(univ, ["name *"])
+    else:
+        atom_ids = range(n_atoms)
+
+    
+    print "Number of target elements: " + str(len(atom_ids))
 
     n_pairs = (len(atom_ids)**2 - len(atom_ids) )/2
     print "Pairs of atoms: " + str(n_pairs)
@@ -192,36 +221,36 @@ def _main():
         crd_files, assign_files = check_files(task_atom_ids, opts.fn_gaussian,
                                               opts.fn_crd_bin,
                                               opts.pref_crd, opts.suff_crd, 
-                                              opts.pref_assign, opts.suff_assign,
-                                              opts.dir_res)
+                                              opts.pref_assign, opts.suff_assign)
 
     print assign_files.keys()
-    flg_crd_bin = opts.fn_crd_bin != None
 
-    if opts.fn_o_gauss and len(crd_files.keys())>0 and len(assign_files.keys()) > 0:
+    if opts.fn_o_mdcc and len(crd_files.keys())>0 and len(assign_files.keys()) > 0:
         print "mDCC"
         gaussian_info = read_gaussian_info(opts.fn_gaussian, task_atom_ids)
-        cal_correlation(univ, atom_ids,
+        cal_correlation(atom_ids, dim,
                         gaussian_info,
                         pairs_beg, pairs_end,  task_atom_ids,
-                        opts.fn_o_gauss,
+                        opts.fn_o_mdcc,
                         opts.min_corr, opts.min_pi, 
                         opts.skip, crd_files, assign_files,
                         flg_crd_bin,
                         opts.flg_assign_bin,
-                        opts.lbb_block_size, opts.lbb_b, opts.lbb_repeat,
+                        opts.crd_tsv_columns, opts.crd_tsv_skip_header,
+                        #opts.lbb_block_size, opts.lbb_b, opts.lbb_repeat,
                         time_range, opts.coef_mode)
     elif opts.fn_o_atom and len(crd_files.keys())>0:
         print "DCC"
-        cal_correlation_no_cluster(univ, atom_ids, 
+        cal_correlation_no_cluster(atom_ids, dim,
                                    pairs_beg, pairs_end, task_atom_ids,
                                    opts.fn_o_atom,
                                    opts.min_corr,
                                    opts.skip,
                                    crd_files,
                                    flg_crd_bin,
-                                   opts.lbb_block_size,
-                                   opts.lbb_b, opts.lbb_repeat,
+                                   #opts.lbb_block_size,
+                                   #opts.lbb_b, opts.lbb_repeat,
+                                   opts.crd_tsv_columns, opts.crd_tsv_skip_header,
                                    time_range, opts.center_mode)
     elif opts.fn_o_rmsf and len(crd_files.keys())>0:
         print "RMSF"
@@ -230,9 +259,11 @@ def _main():
                  opts.skip,
                  crd_files,
                  flg_crd_bin,
-                 opts.lbb_block_size,
-                 opts.lbb_b, opts.lbb_repeat,
-                 time_range)
+                 #opts.lbb_block_size,
+                 #opts.lbb_b, opts.lbb_repeat,
+                 opts.crd_tsv_columns, opts.crd_tsv_skip_header,
+                 time_range, dim)
+
 
     print "finished."
     #print "output_datatable"
@@ -253,6 +284,19 @@ def check_target_atom_ids(atom_ids, pairs_beg, pairs_end):
     print "check_target_atom_ids: " + str(cnt)
     print task_atom_ids
     return task_atom_ids
+
+def select_atom_ids(str_select_id):
+    ids = set()
+    sp1 = str_select_id.split(",")
+    for term in sp1:
+        sp2 = term.split("-")
+        if len(sp2) > 2:
+            print "Error : the string for selection atom ids is wrong"
+            print str_select_id
+            sys.exit(1)
+        for i in range(int(sp2[0]), int(sp2[1])+1):
+            ids.add(i)
+    return ids
 
 def read_gaussian_info(fn_gaussian, atoms):
     gaussian_info = {}
@@ -299,32 +343,25 @@ def check_files_bin(atom_ids, fn_crd_bin,
     return crd_files, assign_files
         
 def check_files(atom_ids, fn_gaussian, fn_crd_bin, pref_crd, suff_crd,
-                pref_assign, suff_assign, dir_res):
+                pref_assign, suff_assign):
     
     crd_files = {}
     assign_files = {}
     #print "The number of files " + len(os.listdir("."))
+    for aid in atom_ids:
+        crd_files[aid] = fn_crd_bin
+        if not pref_crd: continue
 
-    for fn1 in os.listdir("."):
-        m = re.compile(dir_res + "(\d+)").match(fn1)
-        if not m: continue
-        res_num = int(m.group(1))
-        tmp_crd_file = ""
-        atoms = []
-        for fn2 in os.listdir(fn1):
-            if not fn_crd_bin:
-                m1 = re.compile(pref_crd + str(res_num) + suff_crd).match(fn2)
-                if m1:
-                    tmp_crd_file = os.path.join(fn1,fn2)
-            if not pref_assign: continue
-            m2 = re.compile(pref_assign + "(\d+)" + suff_assign).match(fn2)
-            if m2:
-                atom_id = int(m2.group(1))
-                atoms.append(atom_id)
-                assign_files[atom_id] = os.path.join(fn1,fn2)
-        if tmp_crd_file != "":
-            for atom_id in atoms:
-                crd_files[atom_id] = tmp_crd_file
+        fn_crd = pref_crd+str(aid)+suff_crd
+        if not os.path.isfile(fn_crd):
+            sys.stderr.write("Coordinate file " + fn_crd + " is not found\n")
+        crd_files[aid] = fn_crd
+
+        fn_assign = pref_assign+str(aid)+suff_assign
+        if not os.path.isfile(fn_assign):
+            sys.stderr.write("Assign file " + fn_assign + " is not found\n")
+            #return None, None
+        assign_files[aid] = fn_assign
 
     flg_stop = False
     for atom_id in atom_ids:
@@ -351,7 +388,6 @@ def get_atom_ids_from_select(univ, select):
         #print sel + " : " + " ".join([str(atom.number) for atom in atoms])
         print sel + " : " + str(len([str(atom.number) for atom in atoms]))
     return sorted(set(atom_ids))
-
 
 def cal_ave_crd(univ, atom_ids, time_range,
                 skip):#, timestep, start_time):
@@ -400,24 +436,26 @@ def cal_fluct(univ, atom_id, skip,  time_range):
     fluct = [ x - ave[i] for i, x in enumerate(traj) ]
     return fluct
     
-def read_traj_crd(crd_files, atom_ids, skip, time_range=(0,-1)):
+def read_traj_crd(crd_files, atom_ids, columns, skip, skip_header, time_range=(0,-1)):
     traj_crd = {}
     for atom_id in atom_ids:
         traj = []
         f = open(crd_files[atom_id])
-        line_header = f.readline()
-        header_tmp = re.compile("\s+").split(line_header.strip())
-        header_atoms = [int(re.compile("\.").split(x)[0]) for x in header_tmp]
-        col = header_atoms.index(atom_id)
-        for i, line in enumerate(f):
-            if i%skip!=0: continue
+        print crd_files[atom_id]
+        for i in range(skip_header): line_header = f.readline()
+        
+        traj = []
+        for i in range(len(columns)): traj.append([])
+
+        for time, line in enumerate(f):
+            if time%skip!=0: continue
             terms = re.compile("\s+").split(line.strip())
-            time = float(terms[0])
             if time<time_range[0] or (time_range[1] > 0 and time>=time_range[1]): continue
-            crd = np.array([float(x) for x in terms[col+1:col+4]])
-            traj.append(crd)
+            for i,x in enumerate(columns): traj[i].append(float(terms[x]))
+            #traj.append(crd)
         traj_crd[atom_id] = np.array(traj)
         f.close()
+        #print traj
     return traj_crd
 
 def read_traj_pdf_bin(assign_file, read_from=0, read_to=-1):
@@ -429,7 +467,7 @@ def read_traj_pdf_bin(assign_file, read_from=0, read_to=-1):
         magic = struct.unpack("<i", buf)[0]
         flg_endian = "<"
         if magic != 1993:
-            print "Invalid assign file format: the first four byte is no t1993: " + assign_file
+            print "Invalid assign file format: the first four byte is not 1993: " + assign_file
             sys.exit()
 
     read_st = flg_endian+"i"
@@ -450,55 +488,55 @@ def read_traj_pdf_bin(assign_file, read_from=0, read_to=-1):
     f.close()
     return np.array(pdf_array)
 
-def read_traj_pdf(assign_files, atom_ids, n_lines, time_range):
+def read_traj_pdf(assign_file, time_range):
     ## assign_file
     ## Each line corresponds each time step
     ## The number of columns is #Gc * 3
     ## (repeat of [Maharanobis distance, pdf for Gc, pdf for GMM])
     ## 
-    traj_pdf = {}
-    for atom_id in atom_ids:
-        traj = []
-        f = open(assign_files[atom_id])
-        n_read_lines = 0
-        for i, line in enumerate(f):
-            if time_range[0] > i: continue
-            if time_range[1] >= 0 and i >=  time_range[1]: break
-            if n_read_lines == n_lines: break
-            terms = re.compile("\s+").split(line.strip())
-            ### terms[i+2] means pdf for GMM 
-            tmp = np.array([float(terms[i+1]) for i in range(0, len(terms), 3)])
-            traj.append(tmp)
-            n_read_lines += 1
-        traj_pdf[atom_id] = traj
-        f.close()
-    return traj_pdf
+    traj = []
+    f = open(assign_file)
+    n_read_lines = 0
+    for i, line in enumerate(f):
+        if time_range[0] > i: continue
+        if time_range[1] >= 0 and i >=  time_range[1]: break
+        #if n_read_lines == n_lines: break
+        terms = re.compile("\s+").split(line.strip())
+        tmp = np.array([float(terms[i+1]) for i in range(0, len(terms), 3)])
+        traj.append(tmp)
+        n_read_lines += 1
+    f.close()
+    return np.array(traj).T
 
 def load_file_atom(atom_id, time_range, skip,
                    flg_crd_bin, flg_assign_bin,
-                   crd_files, assign_files, trajreader=None):
+                   crd_files, assign_files,
+                   crd_tsv_columns, crd_tsv_skip_header,
+                   trajreader=None):
     traj_crd = None
     if flg_crd_bin:
-        traj_crd = trajreader.read_atom_crd(atom_id, read_from=time_range[0], read_to=time_range[1]) * 10
+        traj_crd = trajreader.read_atom_crd(atom_id, read_from=time_range[0], read_to=time_range[1])
     else:
-        traj_crd = (read_traj_crd(crd_files, [atom_id], skip, time_range)[atom_id]).T
+        traj_crd = read_traj_crd(crd_files, [atom_id], crd_tsv_columns, skip, crd_tsv_skip_header, time_range)[atom_id]
 
     traj_pdf = None
     if len(assign_files.keys()) > 0:
         if flg_assign_bin:
             traj_pdf = read_traj_pdf_bin(assign_files[atom_id], read_from=time_range[0], read_to=time_range[1])
         else: 
-            traj_pdf = (read_traj_pdf(assign_files, [atom_id], len(traj_crd), time_range)[atom_id]).T
+            #traj_pdf = (read_traj_pdf(assign_files[atom_id], len(traj_crd), time_range)[atom_id])
+            traj_pdf = read_traj_pdf(assign_files[atom_id], time_range)
     
     return traj_crd, traj_pdf
 
-def cal_correlation(univ, atom_ids, 
+def cal_correlation(atom_ids,  dim,
                     gaussian_info,
                     pairs_beg, pairs_end, task_atom_ids,
                     fn_out_gauss, min_corr, min_pi,
                     skip, crd_files, assign_files, 
                     flg_crd_bin, flg_assign_bin,
-                    lbb_block_size, lbb_b, lbb_repeat,
+                    crd_tsv_columns, crd_tsv_skip_header,
+                    #lbb_block_size, lbb_b, lbb_repeat,
                     time_range=(0,-1),
                     coef_mode="pkpl"):
 
@@ -526,11 +564,15 @@ def cal_correlation(univ, atom_ids,
 
         traj_crd1, traj_pdf1 = load_file_atom(atom_id1, time_range, skip,
                                               flg_crd_bin, flg_assign_bin,
-                                              crd_files, assign_files, trajreader)
+                                              crd_files, assign_files,
+                                              crd_tsv_columns, crd_tsv_skip_header,
+                                              trajreader)
+        
         valid_gc_in_atom1 = []
         for x, gc in enumerate(gaussian_info[atom_id1]):
             if gc[1] >= min_pi: valid_gc_in_atom1.append(x)
-        traj_pdf1 = traj_pdf1[valid_gc_in_atom1] + EPS6
+        for at in valid_gc_in_atom1:
+            traj_pdf1[at] += EPS6
 
         n_frames = traj_crd1.shape[1]
         pdfsum1 = np.sum(traj_pdf1, axis=0)
@@ -544,7 +586,9 @@ def cal_correlation(univ, atom_ids,
             #if not atom_id2 in task_atom_ids: continue
             traj_crd2, traj_pdf2 = load_file_atom(atom_id2, time_range, skip,
                                                   flg_crd_bin, flg_assign_bin,
-                                                  crd_files, assign_files, trajreader)
+                                                  crd_files, assign_files,
+                                                  crd_tsv_columns, crd_tsv_skip_header,
+                                                  trajreader)
 
             valid_gc_in_atom2 = []
             for x, gc in enumerate(gaussian_info[atom_id2]):
@@ -566,7 +610,7 @@ def cal_correlation(univ, atom_ids,
                     gc1 = g1[0]
                     mu1 = g1[2]
                     pi1[vgc1] = traj_pdf1[vgc1]/pdfsum1
-                    disp1[vgc1] = np.array([traj_crd1[i] - mu1[i] for i in [0,1,2]]) + EPS6
+                    disp1[vgc1] = np.array([traj_crd1[i] - mu1[i] for i in range(dim)]) + EPS6
                     dot_xx1[vgc1] = np.array([np.dot(x,x) for x in disp1[vgc1].T])
 
                 for vgc2, gc_in_atom2 in enumerate(valid_gc_in_atom2):
@@ -574,7 +618,7 @@ def cal_correlation(univ, atom_ids,
                     gc2 = g2[0]
                     mu2 = g2[2]
                     pi2[vgc2] = traj_pdf2[vgc2]/pdfsum2
-                    disp2 = np.array([traj_crd2[i] - mu2[i] for i in [0,1,2]]) + EPS6
+                    disp2 = np.array([traj_crd2[i] - mu2[i] for i in range(dim)]) + EPS6
                     dot_xx2[vgc2] = np.array([np.dot(x,x) for x in disp2.T])
                     for vgc1, gc_in_atom1 in enumerate(valid_gc_in_atom1):
                         vgcindex[(vgc1, vgc2)] = len(cross12)
@@ -667,11 +711,11 @@ def cal_correlation(univ, atom_ids,
     if flg_crd_bin: trajreader.close()        
     return 
 
-def cal_correlation_no_cluster(univ, atom_ids, 
+def cal_correlation_no_cluster(atom_ids, 
                                pairs_beg, pairs_end, task_atom_ids,
                                fn_out_atom, min_corr,
                                skip, crd_files, flg_crd_bin,
-                               lbb_block_size, lbb_b, lbb_repeat,
+                               #lbb_block_size, lbb_b, lbb_repeat,
                                time_range=(0,-1), center_mode="default"):
     ## center_mode ... definition of the center originating fluctuation
     ### default ... the averaged coordinate of each atom
@@ -699,7 +743,9 @@ def cal_correlation_no_cluster(univ, atom_ids,
         #print " calc DCC " + str(i) + " " + str(cur_pair) + " " + str(pairs_beg) +"-"+str(pairs_end)
         traj_crd1, traj_pdf1 = load_file_atom(atom_id1, time_range, skip,
                                               flg_crd_bin, False,
-                                              crd_files, dummy, trajreader)
+                                              crd_files, dummy,
+                                              crd_tsv_columns, crd_tsv_skip_header,
+                                              trajreader)
 
         n_frames = traj_crd1.shape[1]
         mu1 = None
@@ -719,7 +765,9 @@ def cal_correlation_no_cluster(univ, atom_ids,
             if not atom_id2 in task_atom_ids: continue
             traj_crd2, traj_pdf2 = load_file_atom(atom_id2, time_range, skip,
                                                   flg_crd_bin, False,
-                                                  crd_files, dummy, trajreader)
+                                                  crd_files, dummy,
+                                                  crd_tsv_columns, crd_tsv_skip_header,
+                                                  trajreader)
             #print str(atom_id1) + " " + str(atom_id2)
             mu2 = None
             if center_mode=="origin":
@@ -759,9 +807,12 @@ def cal_rmsf(univ, atom_ids,
              skip,
              crd_files,
              flg_crd_bin,
-             lbb_block_size,
-             lbb_b, lbb_repeat,
-             time_range):
+             #lbb_block_size,
+             #lbb_b, lbb_repeat,
+             crd_tsv_columns, crd_tsv_skip_header,
+             time_range,
+             dim):
+
     f_rmsf = open(fn_o_rmsf,"w")
     n_pairs = (len(atom_ids) * len(atom_ids) - len(atom_ids))/2
     cur_pair = -1
@@ -777,11 +828,13 @@ def cal_rmsf(univ, atom_ids,
         #print atom_id
         traj_crd, traj_pdf = load_file_atom(atom_id, time_range, skip,
                                             flg_crd_bin, False,
-                                            crd_files, dummy, trajreader)
+                                            crd_files, dummy,
+                                            crd_tsv_columns, crd_tsv_skip_header,
+                                            trajreader)
         n_frames = traj_crd.shape[1]
 
         mu = np.average(traj_crd, axis=1)
-        disp = np.array([traj_crd[i] - mu[i] for i in [0,1,2]])
+        disp = np.array([traj_crd[i] - mu[i] for i in range(dim)])
         #disp2 = np.array([x*x for x in disp.T])
         #disp2 = np.array( np.sum([x[i]*x[i] for i in [0,1,2]])  )
         disp2 = disp * disp
@@ -790,23 +843,23 @@ def cal_rmsf(univ, atom_ids,
         #rmsf = np.sqrt(np.average(disp2))
         rmsf = np.sqrt(np.sum(disp2)/float(n_frames))
         
-        if lbb_block_size and lbb_b:
-            ## local block bootstrap
-            b_rmsf_sum = 0.0
-            b_rmsf_sum2 = 0.0
-            for i in xrange(lbb_repeat):
-                series = lbb.gen_series(n_frames, lbb_block_size, lbb_b)
-                cur_msf = np.sum(disp2[series])/float(n_frames)
-                b_rmsf_sum += np.sqrt(cur_msf)
-                b_rmsf_sum2 += cur_msf
-
-            mean_rmsf = b_rmsf_sum/float(lbb_repeat)
-            sd_rmsf = np.sqrt(b_rmsf_sum2/float(lbb_repeat) - mean_rmsf*mean_rmsf)
+        #if lbb_block_size and lbb_b:
+        #    ## local block bootstrap
+        #    b_rmsf_sum = 0.0
+        #    b_rmsf_sum2 = 0.0
+        #    for i in xrange(lbb_repeat):
+        #        series = lbb.gen_series(n_frames, lbb_block_size, lbb_b)
+        #        cur_msf = np.sum(disp2[series])/float(n_frames)
+        #        b_rmsf_sum += np.sqrt(cur_msf)
+        #        b_rmsf_sum2 += cur_msf
+        
+        #    mean_rmsf = b_rmsf_sum/float(lbb_repeat)
+        #    sd_rmsf = np.sqrt(b_rmsf_sum2/float(lbb_repeat) - mean_rmsf*mean_rmsf)
 
         line = "\t".join([str(x) for x in [atom_id, univ.atoms[atom_id].name,
                                            univ.atoms[atom_id].resnum,
                                            univ.atoms[atom_id].resname,
-                                           rmsf, mean_rmsf, sd_rmsf]])
+                                           rmsf]]) #, mean_rmsf, sd_rmsf]])
         f_rmsf.write(line + "\n")
 
     f_rmsf.close()

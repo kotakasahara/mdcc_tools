@@ -54,3 +54,18 @@ int Write::write_assign_data(double** assign, int n_col, int n_row){
   close();
   return 0;
 }
+int Write::write_assign_data_ascii(double** assign, int n_col, int n_row){
+  open();
+
+  for(int i_row=0; i_row < n_row; i_row++){
+    stringstream ss;
+    for(int i_col=0; i_col < n_col; i_col++){
+      ss << assign[i_col][i_row];
+      if(i_col != n_col-1) ss << "\t";
+    }
+    ss << endl;
+    ofs << ss.str();
+  }
+  close();
+  return 0;
+}

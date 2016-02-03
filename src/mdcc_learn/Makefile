@@ -1,12 +1,12 @@
 EXECUTABLES = mdcc_learn
-#CC=g++
-CC=icpc
+CC=g++
+#CC=icpc
 ##
 
-LAPACKLIB = -lmkl_lapack95_ilp64
-PATH_LAPACKLIB = /opt/intel/mkl/lib/intel64/
-#LAPACKLIB = -llapack
+#LAPACKLIB = -lmkl_lapack95_ilp64
 #PATH_LAPACKLIB = /opt/intel/mkl/lib/intel64/
+LAPACKLIB = -llapack
+PATH_LAPACKLIB = ${HOME}/lib
 ICCFLAGS = -ansi -O3 #-g #-w1 
 
 OBJS = Kprml.o Config.o Read.o Write.o\

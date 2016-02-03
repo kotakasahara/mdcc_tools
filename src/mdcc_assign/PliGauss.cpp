@@ -44,11 +44,14 @@ int PliGauss::test(){
   return 0;
 }
 int PliGauss::assign_trajtrans(){
-  cout << "assign_datatable()"<<endl;
+  cout << "assign mdcctraj"<<endl;
   cout << "load_gaussian_mixtures()"<<endl;
+  Read reader(cfg.fn_interactions);
+  int n_frames = reader.loadKKTrajTransHeader(cfg.skip_data);
+  int dim = reader.get_dim();
   map<vector<int>, GaussianMixture> gm;
   Read(cfg.fn_gaussians).
-    load_gaussian_mixtures(1, cfg.target_columns.size()*3, gm,
+    load_gaussian_mixtures(1, cfg.target_columns.size()*dim, gm,
 			   cfg.skip_header_gaussian);
 
   cout << "gm.size():" << gm.size() <<endl;
@@ -66,15 +69,17 @@ int PliGauss::assign_trajtrans(){
     exit(1);
   }
   vector<Gaussian>::const_iterator itr_gg;
+  cout << "Gaussian-ID   average" << endl;
   for(itr_gg = itr_gm->second.get_gauss().begin();
       itr_gg != itr_gm->second.get_gauss().end(); itr_gg++){
-    cout << (*itr_gg).get_id() << " " <<  (*itr_gg).get_mu()[0] << endl;
+    cout << (*itr_gg).get_id();
+    for(int i=0; i < dim; i++)
+      cout << " " <<  (*itr_gg).get_mu()[i];
+    cout << endl;
   }
   
   cout << "loop start" <<endl;
-  Read reader(cfg.fn_interactions);
   double **table;
-  int n_frames = reader.loadKKTrajTransHeader(cfg.skip_data);
   int n_row = (n_frames - cfg.skip_header) / cfg.skip_data;
 
   cout << "READ: rows:" << n_row << " cols:" << (int)cfg.target_columns.size()*3 << " fn:" << cfg.fn_interactions<< endl;
@@ -102,19 +107,15 @@ int PliGauss::assign_trajtrans(){
   int i_atom=0;
   vector<int>::iterator itr_a;
 
-
   for(itr_a = cfg.target_columns.begin();
       itr_a != cfg.target_columns.end(); itr_a++, i_atom++){
 
     for(int i_row=0; i_row < n_row; i_row++ ){
       vector<Gaussian>::const_iterator itr_g;
-      ublas::vector<double> dat(3);
-      dat[0] = table[i_row][i_atom*3];
-      //cout << i_atom*3 << " - " << i_row << " : " << dat(0) <<endl;
-      dat[1] = table[i_row][i_atom*3+1];
-      //cout << i_atom*3+1 << " - " << i_row << " : " << dat(1) <<endl;
-      dat[2] = table[i_row][i_atom*3+2];
-      //cout << i_atom*3+2 << " - " << i_row << " : " << dat(2) <<endl;
+      ublas::vector<double> dat(dim);
+      for(int d = 0; d < dim; d++){
+	dat[d] = table[i_row][i_atom*dim+d];
+      }
       int i_gc=0;
       for(itr_g = itr_gm->second.get_gauss().begin();
 	  itr_g != itr_gm->second.get_gauss().end(); itr_g++, i_gc++){
@@ -136,10 +137,14 @@ int PliGauss::assign_trajtrans(){
     delete[] table[i];
   }
   delete[] table;
-  cout << "out" << endl;
+  cout << "Output: " << cfg.fn_result<< endl;
   cout<<n_col<<endl;
   Write writer(cfg.fn_result);
-  writer.write_assign_data(assign, n_col, n_row);
+  if(cfg.format_output==FMT_ASCII){
+    writer.write_assign_data_ascii(assign, n_col, n_row);
+  }else if (cfg.format_output==FMT_BIN){
+    writer.write_assign_data(assign, n_col, n_row);
+  }
   
   //delete variables
   for(int i=0; i<n_col; i++){
@@ -155,7 +160,7 @@ int PliGauss::assign_datatable(){
   cout << "load_gaussian_mixtures()"<<endl;
   map<vector<int>, GaussianMixture> gm;
   Read(cfg.fn_gaussians).
-    load_gaussian_mixtures(1, cfg.target_columns.size(), gm,
+    load_gaussian_mixtures(1, cfg.target_columns.size()*3, gm,
 			   cfg.skip_header_gaussian);
 
   cout << "gm.size():" << gm.size() <<endl;
@@ -172,54 +177,97 @@ int PliGauss::assign_datatable(){
     cerr << endl;
     exit(1);
   }
-  cout << "loop start" <<endl;
+  int n_gauss = (int)itr_gm->second.get_gauss().size();
+  int n_col = n_gauss*3;
+
   Read reader(cfg.fn_interactions);
+
+  int n_row = 0;
+  cout << "Counting the number of rows" << endl;
+  vector<double> dat;
+
   reader.open();
-  Write writer(cfg.fn_result);
-  writer.open();
+  // Skip header
+  for(int i=0; i<cfg.skip_header; i++){
+    reader.get_line();
+  }
+  // Count lines
+  int cur_line = -1;
+  while(reader.load_datatable_line(dat, cfg.target_columns)==0){
+    cur_line++;
+    if(cur_line%cfg.skip_data==0) n_row++;
+    dat.clear();
+  }
+  reader.close();
+
+  // Allocate memory
+  double **assign = new double*[n_col];
+  for(int i=0; i<n_col; i++){
+    assign[i] = new double[n_row];
+  }
+  cout << "The number of rows : " << n_row << endl;
+  cout << "Loop start" <<endl;
+  reader.open();
+
+  //Write writer(cfg.fn_result);
+  //writer.open();
 
   //skip header lines
-  vector<double> dat;
   for(int i=0; i<cfg.skip_header; i++){
     reader.get_line();
     //reader.load_datatable_line(dat, cfg.target_columns)
   }
 
-  int cur_line = -1;
+  int i_row = -1;
+  cur_line = -1;
   while(reader.load_datatable_line(dat, cfg.target_columns)==0){
     cur_line++;
     if(cur_line%cfg.skip_data!=0){
       dat.clear();
       continue;
     }
-
-    /*vector<double>::iterator itr_tmp;
-    cerr << "aaa ";
-    for(itr_tmp = dat.begin(); itr_tmp != dat.end(); itr_tmp++){
-      cerr << *itr_tmp << " ";
-    }
-    cerr << endl;*/
+    i_row++;
+    //vector<double>::iterator itr_tmp;
+    //cerr << "aaa ";
+    //for(itr_tmp = dat.begin(); itr_tmp != dat.end(); itr_tmp++){
+    //cerr << *itr_tmp << " ";
+    //}
+    //cerr << endl;
 
     vector<Gaussian>::const_iterator itr_g;
     int i_gc=0;
-    stringstream ss;
     for(itr_g = itr_gm->second.get_gauss().begin();
 	itr_g != itr_gm->second.get_gauss().end(); itr_g++, i_gc++){
       double dist = (*itr_g).cal_gauss_maharanobis_dist(dat);
       double prob_dens = (*itr_g).cal_prob(dat);
       double prob_dens_gmm = prob_dens * itr_gm->second.get_pi()[i_gc];
-      //if(dist <= cfg.assign_max_distance &&
+      assign[i_gc*3][i_row] = dist;
+      assign[i_gc*3+1][i_row] = prob_dens;
+      assign[i_gc*3+2][i_row] = prob_dens_gmm;
       //prob_dens_gmm >= cfg.assign_min_prob_dens){
-      ss << dist << "\t" << prob_dens 
-	 << "\t" << prob_dens_gmm << "\t";
-	//}
+      //ss << dist << "\t" << prob_dens 
+      //<< "\t" << prob_dens_gmm << "\t";
+      //}
     }
-    ss << endl;
-    writer.write_line(ss.str());
+    //ss << endl;
+    //writer.write_line(ss.str());
     dat.clear();
   }
   reader.close();
-  writer.close();
+  cout << "Output: " << cfg.fn_result<< endl;
+  cout<<n_col<<endl;
+  Write writer(cfg.fn_result);
+  if(cfg.format_output==FMT_ASCII){
+    writer.write_assign_data_ascii(assign, n_col, n_row);
+  }else if (cfg.format_output==FMT_BIN){
+    writer.write_assign_data(assign, n_col, n_row);
+  }
+  //delete variables
+  for(int i=0; i<n_col; i++){
+    delete[] assign[i];
+  }
+  delete[] assign;
+  //writer.close();
   return 0;
 }
 

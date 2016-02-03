@@ -1,4 +1,4 @@
--mode assign-trajtrans
+-mode assign-mdcctraj
 -target-column #{COLUMN} 
 -skip-data 1
 -skip-header 0

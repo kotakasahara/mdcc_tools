@@ -11,6 +11,8 @@ class TrajTReader(kkkit.FileBI):
         self.fc_read_real = None
         self.n_atoms = None
         self.n_frames = None
+        self.dim = None
+        self.size_header = 20
     def open(self):
         return super(TrajTReader, self).open()
     def read_header(self):
@@ -34,19 +36,21 @@ class TrajTReader(kkkit.FileBI):
         self.n_atoms = self.read_int()[0]
         ## number of frames
         self.n_frames = self.read_int()[0]
+        ## dimension
+        self.dim = self.read_int()[0]
         return self.n_atoms, self.n_frames
     def read_atom_crd(self, atom_id, read_from=0, read_to=-1 ):
         ## begin_from ... number of frame specifying the point of begining to read
         if not 1 <= read_to <= self.n_frames:
             read_to = self.n_frames
         n_read_frames = read_to - read_from 
+
+        crd = np.zeros((self.dim, self.n_frames), dtype="float32")
         
-        self.f.seek(16 + atom_id * 3 * self.n_frames * self.size_real + read_from * self.size_real)
-        crd_x = np.array(self.fc_read_real(n_read_frames))
-        self.f.seek(16 + (atom_id * 3 + 1) * self.n_frames * self.size_real + read_from * self.size_real)
-        crd_y = np.array(self.fc_read_real(n_read_frames))
-        self.f.seek(16 + (atom_id * 3 + 2) * self.n_frames * self.size_real + read_from * self.size_real)
-        crd_z = np.array(self.fc_read_real(n_read_frames))
-        return np.array([crd_x, crd_y, crd_z])
+        for d in range(self.dim):
+            self.f.seek(self.size_header + (atom_id * self.dim + d) * self.n_frames * self.size_real + read_from * self.size_real)
+            crd[d] = np.array(self.fc_read_real(n_read_frames))
+
+        return crd
     
         
