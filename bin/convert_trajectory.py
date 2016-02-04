@@ -23,10 +23,10 @@ def define_options():
                  choices=["trr", "tsv"],
                  default="trr",
                  help="Input file format, tsv or trr")
-    p.add_option('--ignore-columns', dest='ignore_col',
+    p.add_option('--ignore-col', dest='ignore_col',
                  type="int", default=0,
                  help="The number of ignored columns in .tsv files.")
-    p.add_option('--ignore-rows', dest='ignore_row',
+    p.add_option('--ignore-row', dest='ignore_row',
                  type="int", default=0,
                  help="The number of ignored rows in .tsv files.")
     p.add_option('--double', dest='flg_double',
@@ -47,6 +47,7 @@ def check_options(opts):
             print "Only one .trr file must be specified by -i option"
             sys.exit(1)
     return
+
 class Traj(object):
     def __init__(self, fn_list, fn_out, i_fmt, dim, ignore_row, ignore_col):
         self.fn_list = fn_list
@@ -320,5 +321,6 @@ def _main():
     if opts.in_format == "trr":
         traj.close()
     return 
+
 if __name__ == "__main__":
     _main()

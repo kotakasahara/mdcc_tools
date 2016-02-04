@@ -9,7 +9,7 @@ python2.7 ${MDCCTOOLS}/bin/cal_mdcc.py \
     --fn-ref reference_cano.pdb \
     --fn-crd-bin  traj.trrmdcc \
     --select "not type H" \
-    --o-atom dcc/corr.txt.${id_cal} \
+    --o-dcc dcc/corr.txt.${id_cal} \
     --skip 1 \
     --n-div ${n_cal} \
     --min-corr 0.0 \

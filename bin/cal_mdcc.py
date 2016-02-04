@@ -30,9 +30,9 @@ def define_options():
                  default=1,
                  type="int",
                  help="number of steps to be skipped")
-    p.add_option('--center-mode', dest='center_mode',
-                 default="default",
-                 help="definition of the center of fluctuation")
+    #p.add_option('--center-mode', dest='center_mode',
+    #             default="default",
+    #             help="definition of the center of fluctuation")
     p.add_option('--gaussian', dest='fn_gaussian',
                  help="file name for definition of gaussian mixtures")
 
@@ -86,7 +86,7 @@ def define_options():
     p.add_option('--select-id', dest='str_select_id',
                  help="Atom id to be analyzed. ex) 0-5,7,10-12")
 
-    p.add_option('--o-atom', dest="fn_o_atom",
+    p.add_option('--o-dcc', dest="fn_o_dcc",
                  help="")
     p.add_option('--o-mdcc', dest="fn_o_mdcc",
                  help="")
@@ -239,11 +239,11 @@ def _main():
                         opts.crd_tsv_columns, opts.crd_tsv_skip_header,
                         #opts.lbb_block_size, opts.lbb_b, opts.lbb_repeat,
                         time_range, opts.coef_mode)
-    elif opts.fn_o_atom and len(crd_files.keys())>0:
+    elif opts.fn_o_dcc and len(crd_files.keys())>0:
         print "DCC"
         cal_correlation_no_cluster(atom_ids, dim,
                                    pairs_beg, pairs_end, task_atom_ids,
-                                   opts.fn_o_atom,
+                                   opts.fn_o_dcc,
                                    opts.min_corr,
                                    opts.skip,
                                    crd_files,
@@ -251,7 +251,7 @@ def _main():
                                    #opts.lbb_block_size,
                                    #opts.lbb_b, opts.lbb_repeat,
                                    opts.crd_tsv_columns, opts.crd_tsv_skip_header,
-                                   time_range, opts.center_mode)
+                                   time_range)
     elif opts.fn_o_rmsf and len(crd_files.keys())>0:
         print "RMSF"
         cal_rmsf(univ, atom_ids, 
@@ -263,8 +263,9 @@ def _main():
                  #opts.lbb_b, opts.lbb_repeat,
                  opts.crd_tsv_columns, opts.crd_tsv_skip_header,
                  time_range, dim)
-
-
+    else:
+        print "--o-mdcc or --o-dcc or --o-rmsf must be specified"
+    
     print "finished."
     #print "output_datatable"
     #output_corr_matrix(opts.fn_o_dat, univ, atom_ids, corr)
@@ -711,17 +712,15 @@ def cal_correlation(atom_ids,  dim,
     if flg_crd_bin: trajreader.close()        
     return 
 
-def cal_correlation_no_cluster(atom_ids, 
+def cal_correlation_no_cluster(atom_ids, dim,
                                pairs_beg, pairs_end, task_atom_ids,
-                               fn_out_atom, min_corr,
+                               fn_out_dcc, min_corr,
                                skip, crd_files, flg_crd_bin,
                                #lbb_block_size, lbb_b, lbb_repeat,
-                               time_range=(0,-1), center_mode="default"):
-    ## center_mode ... definition of the center originating fluctuation
-    ### default ... the averaged coordinate of each atom
-    ### molcenter ... the center of molecule
-    ### origin ... origin
-    f_atom = open(fn_out_atom,"w")
+                               crd_tsv_columns, crd_tsv_skip_header,
+                               time_range=(0,-1)):
+
+    f_dcc = open(fn_out_dcc,"w")
 
     count = 0
 
@@ -750,11 +749,11 @@ def cal_correlation_no_cluster(atom_ids,
         n_frames = traj_crd1.shape[1]
         mu1 = None
         
-        if center_mode=="origin":
-            mu1 = np.array([0.0, 0.0, 0.0])
-        else:
-            mu1 = np.average(traj_crd1, axis=1)
-        disp1 = np.array([traj_crd1[i] - mu1[i] for i in [0,1,2]])
+        #if center_mode=="origin":
+        #    mu1 = np.array([0.0, 0.0, 0.0])
+        #else:
+        mu1 = np.average(traj_crd1, axis=1)
+        disp1 = np.array([traj_crd1[i] - mu1[i] for i in range(dim)])
         dot_xx1 = np.array([np.dot(x,x) for x in disp1.T])
         for atom_id2 in atom_ids:
             if atom_id1 == atom_id2: break
@@ -770,11 +769,11 @@ def cal_correlation_no_cluster(atom_ids,
                                                   trajreader)
             #print str(atom_id1) + " " + str(atom_id2)
             mu2 = None
-            if center_mode=="origin":
-                mu2 = np.array([0.0, 0.0, 0.0])
-            else:
-                mu2 = np.average(traj_crd2, axis=1)
-            disp2 = np.array([traj_crd2[i] - mu2[i] for i in [0,1,2]])
+            #if center_mode=="origin":
+            #    mu2 = np.array([0.0, 0.0, 0.0])
+            #else:
+            mu2 = np.average(traj_crd2, axis=1)
+            disp2 = np.array([traj_crd2[i] - mu2[i] for i in range(dim)])
             dot_xx2 = np.array([np.dot(x,x) for x in disp2.T])
 
             cross = np.array([np.dot(d1,d2) for d1, d2 in zip(disp1.T, disp2.T)])
@@ -796,9 +795,9 @@ def cal_correlation_no_cluster(atom_ids,
 
             if np.fabs(corr) >= min_corr or np.fabs(mean_corr) >= min_corr:
                 line = "\t".join([str(x) for x in [atom_id2, atom_id1, corr, dist_mu]])
-                f_atom.write(line + "\n")
+                f_dcc.write(line + "\n")
                 
-    f_atom.close()
+    f_dcc.close()
     if flg_crd_bin: trajreader.close()        
     return 
 

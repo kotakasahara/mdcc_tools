@@ -29,7 +29,7 @@ def define_options():
     return opts, args
 
 def get_header_string(dim):
-    header = ["gc_id.int", "pi.float"]
+    header = ["gc_id.int", "element_id.int", "pi.float"]
     for i in range(dim):
         header.append("mu"+str(i+1)+".float")
     for i in range(dim):
