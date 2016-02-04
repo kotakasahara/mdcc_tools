@@ -9,7 +9,7 @@ import os
 import re
 import struct
 import kktrajtrans
-import local_block_bootstrap as lbb
+##import local_block_bootstrap as lbb
 
 DEBUG = True
 
