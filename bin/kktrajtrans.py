@@ -11,6 +11,7 @@ class TrajTReader(kkkit.FileBI):
         self.fc_read_real = None
         self.n_atoms = None
         self.n_frames = None
+        self.n_read_frames = None
         self.dim = None
         self.size_header = 20
     def open(self):
@@ -43,13 +44,13 @@ class TrajTReader(kkkit.FileBI):
         ## begin_from ... number of frame specifying the point of begining to read
         if not 1 <= read_to <= self.n_frames:
             read_to = self.n_frames
-        n_read_frames = read_to - read_from 
+        self.n_read_frames = read_to - read_from 
 
-        crd = np.zeros((self.dim, self.n_frames), dtype="float32")
+        crd = np.zeros((self.dim, self.n_read_frames), dtype="float32")
         
         for d in range(self.dim):
             self.f.seek(self.size_header + (atom_id * self.dim + d) * self.n_frames * self.size_real + read_from * self.size_real)
-            crd[d] = np.array(self.fc_read_real(n_read_frames))
+            crd[d] = np.array(self.fc_read_real(self.n_read_frames))
 
         return crd
     
