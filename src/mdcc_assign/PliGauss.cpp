@@ -344,7 +344,7 @@ int PliGauss::assign_tai(){
   
   TriAtomInact tai("",-1,vector<int>(),-1,-1,-1,-1,Coord());
   int i=-1;
-  while(reader.load_tri_atom_interaction_line(tai)==0){
+  while(reader.load_tri_atom_interaction_line(tai, cfg.data_type_cols)==0){
     i++;
     if(cfg.interactions_n_end > 0){
       if(cfg.interactions_n_begin > i) continue;

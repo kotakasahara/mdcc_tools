@@ -29,7 +29,12 @@ class Config{
   int skip_header;
   int skip_header_gaussian;
 
+  vector<int> data_type_cols;
+  // column ids defining type, in data table
+
   int format_output;
+
+
   Config();
   ~Config();
 

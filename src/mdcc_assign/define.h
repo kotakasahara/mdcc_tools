@@ -8,7 +8,7 @@ using namespace std;
 
 //About this program.
 #define EXE "mdcc_assign"
-#define ABOUT_ME "mdcc_assign ver.0.07.b 02-Feb-2016"
+#define ABOUT_ME "mdcc_assign ver.0.07.c 25-Mar-2017"
 
 #define PI 3.14159265
 

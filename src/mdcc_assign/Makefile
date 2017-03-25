@@ -1,9 +1,9 @@
 EXECUTABLES = mdcc_assign
 CC=g++
 ICCFLAGS = -O3 #-w2
-#LAPACKLIB = -lmkl_lapack95_ilp64
+LAPACKLIB = -lmkl_lapack95_ilp64
 #PATH_LAPACKLIB = /opt/intel/mkl/lib/intel64/
-LAPACKLIB = -llapack
+#LAPACKLIB = -llapack
 PATH_LAPACKLIB = ${HOME}/lib
 BOOSTINC = $(HOME)/include
 

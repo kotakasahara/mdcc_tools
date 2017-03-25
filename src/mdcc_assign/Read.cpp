@@ -152,8 +152,15 @@ int Read::load_tri_tri_interaction_line(TriTriInact& tti){
   tti = tmptti;
   return 0;
 }
-int Read::load_tri_atom_interaction_line(TriAtomInact& tai){
+int Read::load_tri_atom_interaction_line(TriAtomInact& tai,
+					 vector<int> type_cols){
   string buf;
+  if(type_cols.empty()){
+    type_cols.push_back(5);
+    type_cols.push_back(6);
+    type_cols.push_back(7);
+    type_cols.push_back(9);
+  }
 
   if(!getline(ifs,buf)){
     return 1;
@@ -168,18 +175,37 @@ int Read::load_tri_atom_interaction_line(TriAtomInact& tai){
   int latomidv;
   int latomtype;
   int ltri1; int ltri2; int ltri3;
-
   
   double igx,igy,igz;
 
   stringstream ss(buf);
-  ss>>code>>id>>ptriid>>resid>>restype
-    >>ptri1>>ptri2>>ptri3
-    >>latomidv
-    >>latomtype
-    >>igx>>igy>>igz;
-  //      >>igCx>>igCy>>igCz
-  //      >>igNx>>igNy>>igNz;
+  string token;
+  vector<string> terms;
+  while ( ss >> token ){
+    terms.push_back(token);
+  }
+  code = terms[0];
+  id = atoi(terms[1].c_str());
+  ptriid = atoi(terms[2].c_str());
+  resid = atoi(terms[3].c_str());
+  restype = atoi(terms[4].c_str());
+  latomidv = atoi(terms[8].c_str());
+  igx = atof(terms[10].c_str());
+  igy = atof(terms[11].c_str());
+  igz = atof(terms[12].c_str());
+  ptri1 = atoi(terms[type_cols[0]].c_str());
+  ptri2 = atoi(terms[type_cols[1]].c_str());
+  ptri3 = atoi(terms[type_cols[2]].c_str());
+  latomtype  = atoi(terms[type_cols[3]].c_str());
+  //cout << "dbg0325 " << ptri1 << "-" << ptri2 << "-" << ptri3 <<"-"<<latomtype <<endl;
+  //ss >> code >> id >> ptriid >> resid >> restype
+  //>> ptri1 >> ptri2 >> ptri3
+  //>>latomidv
+  //>>latomtype
+  //>>igx>>igy>>igz;
+
+  // >>igCx>>igCy>>igCz
+  // >>igNx>>igNy>>igNz;
   vector<int> type;
   type.push_back(ptri1);
   type.push_back(ptri2);

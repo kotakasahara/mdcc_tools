@@ -67,6 +67,7 @@ void Config::set_all(const vector<string>& arg){
     else if(*itr=="-skip-data"){ skip_data=atoi((*++itr).c_str()); }
     else if(*itr=="-skip-header"){ skip_header=atoi((*++itr).c_str()); }
     else if(*itr=="-skip-header-gaussian"){ skip_header_gaussian=atoi((*++itr).c_str()); }
+    else if(*itr=="-data-type-col"){ data_type_cols.push_back(atoi((*++itr).c_str()));}
     else{
       cerr << "unknown keyword <" << *itr << ">" << endl;
     }
