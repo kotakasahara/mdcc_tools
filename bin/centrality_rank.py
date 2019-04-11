@@ -86,14 +86,21 @@ def _main():
     tbl = trm.read_tables(False)
 
     rank_column = opts.rank_column
+    rank_column_ratio = opts.rank_column+"_ratio"
     rank_column_1 = opts.rank_column+"1"
     rank_column_2 = opts.rank_column+"2"
+    rank_column_ratio_1 = opts.rank_column+"_ratio1"
+    rank_column_ratio_2 = opts.rank_column+"_ratio2"
 
     tbl.push_type_def(rank_column, "int")
+    tbl.push_type_def(rank_column_ratio, "float")
     tbl.push_type_def(rank_column_1, "int")
     tbl.push_type_def(rank_column_2, "int")
+    tbl.push_type_def(rank_column_ratio_1, "float")
+    tbl.push_type_def(rank_column_ratio_2, "float")
 
     ## ranking each node
+    max_rank = {}
     for cate in opts.category:
         set_cate = set(cate.split(","))
         print set_cate
@@ -103,8 +110,11 @@ def _main():
         print len(rank.keys())
         print rank.values()
 
-        for elem_key, rank in rank.items():
-            tbl.elements[elem_key][rank_column] = rank
+        for elem_key, i_rank in rank.items():
+            tbl.elements[elem_key][rank_column] = i_rank
+            tbl.elements[elem_key][rank_column_ratio] = float(i_rank)/float(len(rank.values()))
+
+        max_rank[cate] = float(max(rank.values()))
             
     ## adding ranking information to edges
     for edge_keys, edge_info in tbl.relations.items():
@@ -115,8 +125,10 @@ def _main():
             print tbl.elements[edge_keys[0]]
             #sys.exit(1)
             edge_info[rank_column_1] = -1
+            edge_info[rank_column_ratio_1] = -1
         else:
             edge_info[rank_column_1] = tbl.elements[edge_keys[0]][rank_column]
+            edge_info[rank_column_ratio_1] = tbl.elements[edge_keys[0]][rank_column_ratio]
 
         if not rank_column in tbl.elements[edge_keys[1]]:
             print "ERROR"
@@ -124,11 +136,12 @@ def _main():
             print tbl.elements[edge_keys[1]]
             #sys.exit(1)
             edge_info[rank_column_2] = -1
+            edge_info[rank_column_ratio_2] = -1
         else:
             edge_info[rank_column_2] = tbl.elements[edge_keys[1]][rank_column]
+            edge_info[rank_column_ratio_2] =  tbl.elements[edge_keys[1]][rank_column_ratio]
     
     kktable.TableWriter(opts.fn_o_nodes).write_binrel_elements(tbl)
-
     kktable.TableWriter(opts.fn_o_edges).write_binrel_relations(tbl)
 
 if __name__ == "__main__":
