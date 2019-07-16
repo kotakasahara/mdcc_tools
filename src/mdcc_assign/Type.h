@@ -31,4 +31,6 @@ class ProtriType{
 };
 bool operator<(ProtriType op1,ProtriType op2);
 
+int get_res_id(string res_st);
+
 #endif 

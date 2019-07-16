@@ -131,29 +131,26 @@ def define_options():
     ## sum
 
     opts, args = p.parse_args()
-    print "----------------------------"
-    p.print_help()
-    print "----------------------------"
 
     return opts, args
 
 def print_opt_info(opts):
     if not opts.pref_assign:
-        print "The conventional Dynamic Cross Correlation"
+        print("The conventional Dynamic Cross Correlation")
     else:
-        print "The multi-modal Dinamic Cross Correlation"
+        print( "The multi-modal Dinamic Cross Correlation")
 
     if not opts.fn_crd_bin:
         if not opts.pref_crd or \
                 not opts.crd_tsv_columns:
-            print "When the binary trajectory data is not specified by --fn-crd-bin optsion,"
-            print "the .tsv files must be specified by --pref-crd and --suff-crd options."
-            print "The names of .tsv files must include 0-origin element (atom) ID."
-            print "ex) crd_0.tsv, crd_1.tsv, ..."
-            print "    --pref-crd crd_  --suff-crd .tsv"
-            print ""
-            print "In addition, 0-origin column IDs in the .tsv file is specified by --crd-tsv-columns option,"
-            print "in order to define the column of the data to be analyzed."
+            print("When the binary trajectory data is not specified by --fn-crd-bin optsion,")
+            print("the .tsv files must be specified by --pref-crd and --suff-crd options.")
+            print("The names of .tsv files must include 0-origin element (atom) ID.")
+            print("ex) crd_0.tsv, crd_1.tsv, ...")
+            print("    --pref-crd crd_  --suff-crd .tsv")
+            print("")
+            print("In addition, 0-origin column IDs in the .tsv file is specified by --crd-tsv-columns option,")
+            print("in order to define the column of the data to be analyzed.")
             sys.exit(1)
 
     return 
@@ -190,7 +187,7 @@ def _main():
         atom_ids = select_atom_ids(opts.str_select_id)
     elif univ:
         if len(opts.str_select)>0:
-            print opts.str_select
+            print(opts.str_select)
             atom_ids = get_atom_ids_from_select(univ, opts.str_select)
         else:
             atom_ids = get_atom_ids_from_select(univ, ["name *"])
@@ -198,17 +195,17 @@ def _main():
         atom_ids = range(n_atoms)
 
     
-    print "Number of target elements: " + str(len(atom_ids))
+    print("Number of target elements: " + str(len(atom_ids)))
 
     n_pairs = (len(atom_ids)**2 - len(atom_ids) )/2
-    print "Pairs of atoms: " + str(n_pairs)
+    print("Pairs of atoms: " + str(n_pairs))
     pairs_beg = 0
     pairs_end = n_pairs
     if opts.task_id > 0:
         n_pairs_in_task = (n_pairs + ( opts.n_div_job -1)) / opts.n_div_job
         pairs_beg = n_pairs_in_task * (opts.task_id-1)
         pairs_end = pairs_beg + n_pairs_in_task
-    print "Pairs to be calculated in this job : " + str(pairs_beg) + " - " + str(pairs_end)
+    print("Pairs to be calculated in this job : " + str(pairs_beg) + " - " + str(pairs_end))
     task_atom_ids = check_target_atom_ids(atom_ids, pairs_beg, pairs_end)
     #print str(len(task_atom_ids))
     
@@ -223,10 +220,10 @@ def _main():
                                               opts.pref_crd, opts.suff_crd, 
                                               opts.pref_assign, opts.suff_assign)
 
-    print assign_files.keys()
+    print(assign_files.keys())
 
-    if opts.fn_o_mdcc and len(crd_files.keys())>0 and len(assign_files.keys()) > 0:
-        print "mDCC"
+    if opts.fn_o_mdcc and len(crd_files.keys()) > 0 and len(assign_files.keys()) > 0:
+        print("mDCC")
         gaussian_info = read_gaussian_info(opts.fn_gaussian, task_atom_ids)
         cal_correlation(atom_ids, dim,
                         gaussian_info,
@@ -240,7 +237,7 @@ def _main():
                         #opts.lbb_block_size, opts.lbb_b, opts.lbb_repeat,
                         time_range, opts.coef_mode)
     elif opts.fn_o_dcc and len(crd_files.keys())>0:
-        print "DCC"
+        print("DCC")
         cal_correlation_no_cluster(atom_ids, dim,
                                    pairs_beg, pairs_end, task_atom_ids,
                                    opts.fn_o_dcc,
@@ -253,7 +250,7 @@ def _main():
                                    opts.crd_tsv_columns, opts.crd_tsv_skip_header,
                                    time_range)
     elif opts.fn_o_rmsf and len(crd_files.keys())>0:
-        print "RMSF"
+        print("RMSF")
         cal_rmsf(univ, atom_ids, 
                  opts.fn_o_rmsf,
                  opts.skip,
@@ -264,9 +261,9 @@ def _main():
                  opts.crd_tsv_columns, opts.crd_tsv_skip_header,
                  time_range, dim)
     else:
-        print "--o-mdcc or --o-dcc or --o-rmsf must be specified"
+        print("--o-mdcc or --o-dcc or --o-rmsf must be specified")
     
-    print "finished."
+    print("finished.")
     #print "output_datatable"
     #output_corr_matrix(opts.fn_o_dat, univ, atom_ids, corr)
 
@@ -282,8 +279,8 @@ def check_target_atom_ids(atom_ids, pairs_beg, pairs_end):
             if cnt >= pairs_end: continue
             task_atom_ids.add(a1)
             task_atom_ids.add(a2)
-    print "check_target_atom_ids: " + str(cnt)
-    print task_atom_ids
+    print("check_target_atom_ids: " + str(cnt))
+    print(task_atom_ids)
     return task_atom_ids
 
 def select_atom_ids(str_select_id):
@@ -292,8 +289,8 @@ def select_atom_ids(str_select_id):
     for term in sp1:
         sp2 = term.split("-")
         if len(sp2) > 2:
-            print "Error : the string for selection atom ids is wrong"
-            print str_select_id
+            print("Error : the string for selection atom ids is wrong")
+            print(str_select_id)
             sys.exit(1)
         for i in range(int(sp2[0]), int(sp2[1])+1):
             ids.add(i)
@@ -384,10 +381,10 @@ def check_files(atom_ids, fn_gaussian, fn_crd_bin, pref_crd, suff_crd,
 def get_atom_ids_from_select(univ, select):
     atom_ids = []
     for sel in select:
-        atoms = univ.selectAtoms(sel)
-        atom_ids.extend([atom.number for atom in atoms])
+        atoms = univ.select_atoms(sel)
+        atom_ids.extend([atom.ix for atom in atoms])
         #print sel + " : " + " ".join([str(atom.number) for atom in atoms])
-        print sel + " : " + str(len([str(atom.number) for atom in atoms]))
+        print(sel + " : " + str(len([str(atom.ix) for atom in atoms])))
     return sorted(set(atom_ids))
 
 def cal_ave_crd(univ, atom_ids, time_range,
@@ -405,7 +402,7 @@ def cal_ave_crd(univ, atom_ids, time_range,
     count = 0
     for n_frames, ts in enumerate(univ.trajectory):
         if n_frames % skip != 0: continue
-        if n_frames % 1000 == 0: print n_frames
+        if n_frames % 1000 == 0: print(n_frames)
         if time_range[0] > n_frames: continue
         if time_range[1] > 0 and time_range[1] <= n_frames: break
         #time = ts.time
@@ -442,7 +439,7 @@ def read_traj_crd(crd_files, atom_ids, columns, skip, skip_header, time_range=(0
     for atom_id in atom_ids:
         traj = []
         f = open(crd_files[atom_id])
-        print crd_files[atom_id]
+        print(crd_files[atom_id])
         for i in range(skip_header): line_header = f.readline()
         
         traj = []
@@ -468,7 +465,7 @@ def read_traj_pdf_bin(assign_file, read_from=0, read_to=-1):
         magic = struct.unpack("<i", buf)[0]
         flg_endian = "<"
         if magic != 1993:
-            print "Invalid assign file format: the first four byte is not 1993: " + assign_file
+            print("Invalid assign file format: the first four byte is not 1993: " + assign_file)
             sys.exit()
 
     read_st = flg_endian+"i"
@@ -549,11 +546,11 @@ def cal_correlation(atom_ids,  dim,
     cur_pair = -1
     trajreader = None
     if flg_crd_bin:
-        print crd_files.values()[0]
+        print(crd_files.values()[0])
         trajreader = kktrajtrans.TrajTReader(crd_files.values()[0])
         trajreader.open()
         trajreader.read_header()
-    print atom_ids
+    print(atom_ids)
     for i, atom_id1 in enumerate(atom_ids):
         if not atom_id1 in task_atom_ids:
             for atom_id2 in atom_ids:
@@ -730,12 +727,12 @@ def cal_correlation_no_cluster(atom_ids, dim,
     cur_pair = -1
     trajreader = None
     if flg_crd_bin:
-        print crd_files.values()[0]
+        print(crd_files.values()[0])
         trajreader = kktrajtrans.TrajTReader(crd_files.values()[0])
         trajreader.open()
         trajreader.read_header()
     dummy = {}
-    print atom_ids
+    print(atom_ids)
     for i, atom_id1 in enumerate(atom_ids):
         #print "atom : " + str(atom_id1)
         #if not atom_id1 in task_atom_ids: continue
@@ -818,7 +815,7 @@ def cal_rmsf(univ, atom_ids,
     trajreader = None
 
     if flg_crd_bin:
-        print crd_files.values()[0]
+        print(crd_files.values()[0])
         trajreader = kktrajtrans.TrajTReader(crd_files.values()[0])
         trajreader.open()
         trajreader.read_header()

@@ -62,7 +62,7 @@ def _main():
     f_bash.write("\n")
 
     univ = Universe(opts.fn_pdb)
-    atoms = univ.selectAtoms(opts.selection)
+    atoms = univ.select_atoms(opts.selection)
     n_atoms_task = (len(atoms) + (opts.n_div - 1)) / opts.n_div
     task_id = opts.task_id - 1
     atom_begin = n_atoms_task * task_id
@@ -72,7 +72,7 @@ def _main():
     print "The number of atoms processed in this job : %d (%d - %d)"%(n_atoms_task,atom_begin, atom_end)
     
     for i in range(atom_begin, atom_end):
-        atom_id = atoms[i].number
+        atom_id = atoms[i].ix
         
         conf = mdcclearn_conf.replace("#{COLUMN}",str(atom_id))
 

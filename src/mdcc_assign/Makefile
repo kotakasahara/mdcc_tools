@@ -1,5 +1,5 @@
 EXECUTABLES = mdcc_assign
-CC=g++
+CC=icpc
 ICCFLAGS = -O3 #-w2
 LAPACKLIB = -lmkl_lapack95_ilp64
 #PATH_LAPACKLIB = /opt/intel/mkl/lib/intel64/
@@ -18,7 +18,7 @@ OBJS = PliGauss.o Config.o Read.o Write.o\
 
 $(EXECUTABLES) : $(OBJS)
 	rm -f $(EXECUTABLES)
-	$(CC) -o $(EXECUTABLES) $(OBJS) -L$(PATH_LAPACKLIB) ${LAPACKLIB} --static
+	$(CC) -o $(EXECUTABLES) $(OBJS) -L$(PATH_LAPACKLIB) ${LAPACKLIB} # --static
 .cpp.o:
 	$(CC) -c $(ICCFLAGS) -I$(BOOSTINC)  $<
 

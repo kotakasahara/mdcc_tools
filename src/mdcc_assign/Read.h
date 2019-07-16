@@ -41,6 +41,9 @@ class Read{
   int load_tri_tri_interaction_line(TriTriInact& tti);
   int load_tri_atom_interaction_line(TriAtomInact& tai,
 				     vector<int> type_cols);
+  int load_res_atom_interaction_line(ResAtomInact& tai,
+					 vector<int> type_cols);
+
   int load_gaussian_mixtures(int n_column_type, int dimension,
 			     map<vector<int>, GaussianMixture>& gm,
 			     int skip_header_gaussian);

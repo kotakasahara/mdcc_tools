@@ -21,6 +21,7 @@ class PliGauss{
   int test();
   int assign_tti();
   int assign_tai();
+  int assign_rai();
   int assign_datatable();
   int assign_trajtrans();
 };

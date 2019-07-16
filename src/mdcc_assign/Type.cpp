@@ -1,4 +1,5 @@
 #include "Type.h"
+
 TriType::TriType(){
 }
 TriType::TriType(int inA1,int inA2,int inA3,char inB12,char inB23){
@@ -54,4 +55,15 @@ bool operator<(ProtriType op1,ProtriType op2){
 bool ProtriType::operator==(ProtriType op){
   return res==op.res && a1==op.a1 &&
     a2==op.a2 && a3==op.a3;
+}
+
+int get_res_id(string res_st){
+  int restype = 0;
+  for (int i = 0; i<20; i++){
+    string tmpres(aminoacid[i]);
+    if(tmpres==res_st){
+      return i;
+    }
+  }
+  return 20;
 }

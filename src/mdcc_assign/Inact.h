@@ -73,4 +73,28 @@ class TriAtomInact : public Inact{
   //  const Coord& get_ig_norm() const {return ig_norm;};
   //  void set_ig_cent_norm();
 };
+
+class ResAtomInact : public Inact{
+ private:
+  int residv;
+  int restype;
+  int latomidv;
+  Coord ig;
+  //  Coord ig_cent;
+  //  Coord ig_norm;
+ public:
+  ResAtomInact(string in_code, int in_id,
+	      const vector<int>& in_type,
+	      int in_resid, int in_restype,
+	      int in_latomidv,
+	      Coord in_ig);
+  int get_res_idv() const {return residv;};
+  int get_latom_idv() const {return latomidv;};
+  Coord get_ig() const {return ig;};
+  //  const Coord& get_ig_cent() const {return ig_cent;};
+  //  const Coord& get_ig_norm() const {return ig_norm;};
+  //  void set_ig_cent_norm();
+};
+
+
 #endif

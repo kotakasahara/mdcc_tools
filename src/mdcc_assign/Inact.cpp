@@ -39,3 +39,15 @@ TriAtomInact::TriAtomInact(string in_code, int in_id,
   latomidv = in_latomidv;
   ig = in_ig;
 }
+ResAtomInact::ResAtomInact(string in_code, int in_id,
+			   const vector<int>& in_type,
+			   int in_resid,
+			   int in_restype,
+			   int in_latomidv,
+			   Coord in_ig) :
+  Inact(in_code, in_id, in_type){
+  residv = in_resid;
+  restype = in_restype;
+  latomidv = in_latomidv;
+  ig = in_ig;
+}

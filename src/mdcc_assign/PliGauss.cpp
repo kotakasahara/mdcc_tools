@@ -384,3 +384,59 @@ int PliGauss::assign_tai(){
   return 0;
 }
 
+int PliGauss::assign_rai(){
+  cout << "assign_rai()"<<endl;
+  
+  cout << "load_gauss()"<<endl;
+  map<vector<int>, GaussianMixture> gm;
+  Read(cfg.fn_gaussians).
+    load_gaussian_mixtures(4, 3, gm, cfg.skip_header_gaussian);
+  cout << "gm.size():" << gm.size() <<endl;
+
+  Read reader(cfg.fn_interactions);
+  reader.open();
+  Write writer(cfg.fn_result);
+  writer.open();
+  
+  ResAtomInact rai("",-1,vector<int>(),-1,-1,-1,Coord());
+  int i=-1;
+  while(reader.load_res_atom_interaction_line(rai, cfg.data_type_cols)==0){
+    i++;
+    if(cfg.interactions_n_end > 0){
+      if(cfg.interactions_n_begin > i) continue;
+      else if(cfg.interactions_n_end <= i) break;
+    }
+
+    vector<double> x;
+    x.push_back(rai.get_ig().get_x());
+    x.push_back(rai.get_ig().get_y());
+    x.push_back(rai.get_ig().get_z());
+
+    map<vector<int>, GaussianMixture>::iterator itr_gm;
+    itr_gm = gm.find(rai.get_type());
+    if(itr_gm == gm.end()) continue;
+    vector<Gaussian>::const_iterator itr_g;
+    int i_gc=0;
+    for(itr_g = itr_gm->second.get_gauss().begin();
+	itr_g != itr_gm->second.get_gauss().end(); itr_g++, i_gc++){
+      double dist = (*itr_g).cal_gauss_maharanobis_dist(x);
+      double prob_dens = (*itr_g).cal_prob(x);
+      double prob_dens_gmm = prob_dens * itr_gm->second.get_pi()[i_gc];
+      if(dist <= cfg.assign_max_distance &&
+	 prob_dens_gmm >= cfg.assign_min_prob_dens){
+	stringstream ss;
+	ss << rai.get_code() << "\t"
+	   << rai.get_id() << "\t"
+	   << (*itr_g).get_id() <<"\t"
+	   << dist << "\t"
+	   << prob_dens << "\t" 
+	   << prob_dens_gmm << "\t" << endl;
+	writer.write_line(ss.str());
+      }
+    }
+  }
+  reader.close();
+  writer.close();
+  return 0;
+}
+

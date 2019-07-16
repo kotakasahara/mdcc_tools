@@ -8,7 +8,7 @@ using namespace std;
 
 //About this program.
 #define EXE "mdcc_assign"
-#define ABOUT_ME "mdcc_assign ver.0.07.c 25-Mar-2017"
+#define ABOUT_ME "mdcc_assign ver.1.00.a 16-Jul-2019"
 
 #define PI 3.14159265
 
@@ -19,6 +19,7 @@ enum {
   M_TEST=0,
   M_ASSIGN_TTI,
   M_ASSIGN_TAI,
+  M_ASSIGN_RAI,
   M_ASSIGN_TABLE,
   M_ASSIGN_TRAJTRANS,
   M_DUMMY
