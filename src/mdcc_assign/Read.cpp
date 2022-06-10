@@ -218,7 +218,7 @@ int Read::load_tri_atom_interaction_line(TriAtomInact& tai,
   tai = tmptai;
   return 0;
 }
-int Read::load_res_atom_interaction_line(ResAtomInact& tai,
+int Read::load_res_atom_interaction_line(ResAtomInact& rai,
 					 vector<int> type_cols){
   string buf;
   if(type_cols.empty()){
@@ -250,13 +250,12 @@ int Read::load_res_atom_interaction_line(ResAtomInact& tai,
   }
   code = terms[0];
   id = atoi(terms[1].c_str());
-  ptriid = atoi(terms[2].c_str());
-  resid = atoi(terms[3].c_str());
-  restype = atoi(terms[4].c_str());
-  latomidv = atoi(terms[8].c_str());
-  igx = atof(terms[10].c_str());
-  igy = atof(terms[11].c_str());
-  igz = atof(terms[12].c_str());
+  resid = atoi(terms[2].c_str());
+  restype = atoi(terms[3].c_str());
+  latomidv = atoi(terms[4].c_str());
+  igx = atof(terms[7].c_str());
+  igy = atof(terms[8].c_str());
+  igz = atof(terms[9].c_str());
   restype = get_res_id(terms[type_cols[0]]);
   bbsc = atoi(terms[type_cols[1]].c_str());
   latomtype = atoi(terms[type_cols[2]].c_str());
@@ -265,10 +264,10 @@ int Read::load_res_atom_interaction_line(ResAtomInact& tai,
   type.push_back(bbsc);
   type.push_back(latomtype);
 
-  ResAtomInact tmptai(code, id, type, resid, restype,
+  ResAtomInact tmprai(code, id, type, resid, restype,
 		      latomidv,
 		      Coord(igx,igy,igz));
-  tai = tmptai;
+  rai = tmprai;
   return 0;
 }
 int Read::load_tri_tri_interactions(vector<TriTriInact>& tti,

@@ -38,6 +38,7 @@ void Config::set_all(const vector<string>& arg){
       if (*itr == "test")            { mode=M_TEST; }
       else if(*itr == "assign-tti")    { mode=M_ASSIGN_TTI; }
       else if(*itr == "assign-tai")    { mode=M_ASSIGN_TAI; }
+      else if(*itr == "assign-rai")    { mode=M_ASSIGN_RAI; }
       else if(*itr == "assign-table")    { mode=M_ASSIGN_TABLE; }
       else if(*itr == "assign-mdcctraj")    { mode=M_ASSIGN_TRAJTRANS; }
       else{

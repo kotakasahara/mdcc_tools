@@ -29,6 +29,7 @@ int PliGauss::mainStream(){
   case M_TEST: test(); break;
   case M_ASSIGN_TTI: assign_tti(); break;
   case M_ASSIGN_TAI: assign_tai(); break;
+  case M_ASSIGN_RAI: assign_rai(); break;
   case M_ASSIGN_TABLE: assign_datatable(); break;
   case M_ASSIGN_TRAJTRANS: assign_trajtrans(); break;
   default:
@@ -390,14 +391,14 @@ int PliGauss::assign_rai(){
   cout << "load_gauss()"<<endl;
   map<vector<int>, GaussianMixture> gm;
   Read(cfg.fn_gaussians).
-    load_gaussian_mixtures(4, 3, gm, cfg.skip_header_gaussian);
+    load_gaussian_mixtures(cfg.data_type_cols.size(), cfg.target_columns.size(), gm,
+			   cfg.skip_header_gaussian);
   cout << "gm.size():" << gm.size() <<endl;
 
   Read reader(cfg.fn_interactions);
   reader.open();
   Write writer(cfg.fn_result);
   writer.open();
-  
   ResAtomInact rai("",-1,vector<int>(),-1,-1,-1,Coord());
   int i=-1;
   while(reader.load_res_atom_interaction_line(rai, cfg.data_type_cols)==0){
@@ -406,14 +407,19 @@ int PliGauss::assign_rai(){
       if(cfg.interactions_n_begin > i) continue;
       else if(cfg.interactions_n_end <= i) break;
     }
-
     vector<double> x;
     x.push_back(rai.get_ig().get_x());
     x.push_back(rai.get_ig().get_y());
     x.push_back(rai.get_ig().get_z());
-
     map<vector<int>, GaussianMixture>::iterator itr_gm;
     itr_gm = gm.find(rai.get_type());
+    vector<int> tmp_type = rai.get_type();
+    //cout << "dbg type : ";
+    //for(vector<int>::iterator i = tmp_type.begin();
+    //i != tmp_type.end(); i++){
+    //cout << *i << " " ;
+    //}
+    //cout << endl;
     if(itr_gm == gm.end()) continue;
     vector<Gaussian>::const_iterator itr_g;
     int i_gc=0;
